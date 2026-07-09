@@ -1,0 +1,601 @@
+/* ==========================================
+   HERO SECTION
+========================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Noto+Serif+Tamil:wght@400;500;600;700&display=swap');
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+.hero{
+
+    width:100%;
+    min-height:100vh;
+    padding-top:0;
+
+    background:#fcf8f1;
+    position: relative;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+background-image:
+
+radial-gradient(circle at top left,
+rgba(212,175,55,.06),
+transparent 40%);
+    overflow:hidden;
+
+}
+.hero::after{content:"";
+
+position:absolute;
+
+left:40px;
+
+bottom:20px;
+
+width:220px;
+
+height:120px;
+
+background:url("../assets/temple-line.png");
+
+background-size:contain;
+
+background-repeat:no-repeat;
+
+opacity:.08;}
+
+.hero-container{
+
+    width:100%;
+    max-width:1600px;
+
+    display:grid;
+
+    grid-template-columns:49% 51%;
+
+    align-items:center;
+
+    min-height:100vh;
+
+}
+
+/* ============================
+LEFT CONTENT
+============================ */
+
+.hero-content{
+
+    padding-left:80px;
+    padding-right:50px;
+    display:flex;
+flex-direction:column;
+justify-content:center;
+    padding-top:0;
+        transform:translateY(-26px);
+
+}
+
+.hero-subtitle{
+
+    font-family:Poppins;
+    font-size:13px;
+
+    letter-spacing:3px;
+
+    color:#8d6a29;
+
+    font-weight:600;
+
+    margin-bottom:28px;
+
+}
+
+.hero-line{
+
+    width:70px;
+    height:2px;
+
+    background:#d4af37;
+
+    margin-bottom:25px;
+
+}
+
+.hero-small-title{
+
+    font-family:"Noto Serif Tamil";
+color:#A86A00;
+    font-size:22px;
+
+    font-weight:600;
+
+    margin-bottom:18px;
+letter-spacing:1px;
+}
+
+.hero-title{
+
+    font-family:"Noto Serif Tamil";
+
+    font-size:58px;
+
+    color:#432b13;
+
+    line-height:1.2;
+    letter-spacing:-1px;
+
+    margin-bottom:25px;
+
+    font-weight:700;
+
+}
+.hero-description{
+
+    font-family:Poppins;
+
+    font-size:18px;
+
+  color:#555;
+
+    line-height:1.85;
+
+    width:82%;
+    max-width:540px;
+
+    margin-bottom:45px;
+
+}
+
+/* ============================
+BUTTONS
+============================ */
+
+.hero-buttons{
+
+    display:flex;
+
+    gap:18px;
+
+}
+
+.hero-btn{
+
+    text-decoration:none;
+
+    padding:16px 34px;
+    display: inline-flex;
+    font-size: 16px;
+
+    border-radius:50px;
+
+    font-family:Poppins;
+
+    font-weight:600;
+
+    transition:.4s;
+
+}
+
+.primary-btn{
+background:linear-gradient(135deg,#D4AF37,#B8860B);
+
+    color:#fff;
+
+    box-shadow:0 12px 30px rgba(139,94,45,.25);
+
+}
+
+.primary-btn:hover{
+
+   transform:translateY(-6px);
+
+box-shadow:
+0 20px 45px rgba(212,175,55,.35);
+
+}
+
+.secondary-btn{
+
+      border:2px solid #B8860B;
+
+    color:#B8860B;
+
+    background:transparent;
+
+}
+
+.secondary-btn:hover{
+
+    background:#8b5e2d;
+
+    color:white;
+
+}
+
+/* ============================
+RIGHT IMAGE
+============================ */
+
+.hero-image{
+
+    position:relative;
+
+    height:100vh;
+
+    overflow:hidden;
+border-radius:45px 0 0 45px;
+box-shadow:
+-20px 0 60px rgba(0,0,0,.15),
+0 20px 50px rgba(0,0,0,.08);
+
+}
+
+
+.hero-image img{
+    width:100%;
+    height:100%;  
+    object-position:30% center;
+    object-fit:cover;
+    transition:.7s;
+}
+
+.hero-image:hover img{
+
+    transform:scale(1.03);
+
+}
+
+.image-overlay{
+
+position:absolute;
+
+inset:0;
+
+background:linear-gradient(
+90deg,
+rgba(247,242,234,.48),
+rgba(247,242,234,.04),
+transparent
+);
+
+}
+/* ==========================================
+   RESPONSIVE - LAPTOP
+========================================== */
+
+@media (max-width:1400px){
+
+.hero-content{
+    padding-left:60px;
+    padding-right:40px;
+}
+
+.hero-title{
+    font-size:54px;
+}
+
+.hero-description{
+    width:100%;
+}
+
+}
+
+
+/* ==========================================
+   TABLET
+========================================== */
+
+@media (max-width:992px){
+
+.hero-container{
+
+    grid-template-columns:1fr;
+
+    min-height:auto;
+
+}
+
+.hero-content{
+
+    order:2;
+
+    padding:60px 40px;
+
+    text-align:center;
+
+}
+
+.hero-line{
+
+    margin:20px auto;
+
+}
+
+.hero-description{
+
+    width:100%;
+
+}
+
+.hero-buttons{
+
+    justify-content:center;
+
+    flex-wrap:wrap;
+
+}
+
+.hero-image{
+
+    order:1;
+
+    height:500px;
+
+    border-radius:0 0 40px 40px;
+
+}
+
+.hero-title{
+
+    font-size:46px;
+
+}
+
+}
+
+
+/* ==========================================
+   MOBILE
+========================================== */
+
+@media (max-width:768px){
+
+.hero{
+
+    min-height:auto;
+
+}
+
+.hero-content{
+
+    padding:40px 25px;
+
+}
+
+.hero-subtitle{
+
+    font-size:12px;
+
+    letter-spacing:3px;
+
+}
+
+.hero-small-title{
+
+    font-size:18px;
+
+}
+
+.hero-title{
+
+    font-size:34px;
+
+    line-height:1.3;
+
+}
+
+.hero-description{
+
+    font-size:15px;
+
+    line-height:1.8;
+
+}
+
+.hero-buttons{
+
+    flex-direction:column;
+
+    width:100%;
+
+}
+
+.hero-btn{
+
+    width:100%;
+
+    text-align:center;
+
+}
+
+.hero-image{
+
+    height:360px;
+
+    border-radius:0 0 30px 30px;
+
+}
+
+}
+
+
+/* ==========================================
+   SMALL MOBILE
+========================================== */
+
+@media (max-width:480px){
+
+.hero-content{
+
+    padding:35px 20px;
+
+}
+
+.hero-title{
+
+    font-size:28px;
+
+}
+
+.hero-small-title{
+
+    font-size:16px;
+
+}
+
+.hero-description{
+
+    font-size:14px;
+
+}
+
+.hero-image{
+
+    height:300px;
+
+}
+
+}
+
+
+/* ==========================================
+   ANIMATIONS
+========================================== */
+
+.hero-content{
+
+    animation:leftFade 1s ease;
+
+}
+
+.hero-image{
+
+    animation:rightFade 1.2s ease;
+
+}
+
+@keyframes leftFade{
+
+    from{
+
+        opacity:0;
+
+        transform:translateX(-60px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateX(0);
+
+    }
+
+}
+
+@keyframes rightFade{
+
+    from{
+
+        opacity:0;
+
+        transform:translateX(60px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateX(0);
+
+    }
+
+}
+
+
+/* ==========================================
+   BUTTON EFFECT
+========================================== */
+
+.hero-btn{
+
+    position:relative;
+
+    overflow:hidden;
+
+}
+
+.hero-btn::before{
+
+    content:"";
+
+    position:absolute;
+
+    top:0;
+
+    left:-100%;
+
+    width:100%;
+
+    height:100%;
+
+    background:rgba(255,255,255,.25);
+
+    transition:.5s;
+
+}
+
+.hero-btn:hover::before{
+
+    left:100%;
+
+}
+
+
+/* ==========================================
+   IMAGE SHADOW
+========================================== */
+
+
+
+/* ==========================================
+   IMAGE OVERLAY IMPROVE
+========================================== */
+
+
+
+/* ==========================================
+   SMOOTH TRANSITIONS
+========================================== */
+
+.hero-title,
+.hero-description,
+.hero-small-title,
+.hero-subtitle,
+.hero-btn,
+.hero-image img{
+
+    transition:.4s ease;
+
+}
+
+
+/* ==========================================
+   SELECTION COLOR
+========================================== */
+
+::selection{
+
+    background:#8b5e2d;
+
+    color:#fff;
+
+}
