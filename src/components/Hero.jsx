@@ -35,10 +35,6 @@ export default function Hero() {
     கோவில் வரலாறு
   </Link>
 
-  <Link to="/expenses" className="hero-btn secondary-btn">
-    காணிக்கை
-  </Link>
-
 </div>
 
         </div>
