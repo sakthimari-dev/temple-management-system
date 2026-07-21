@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { NotoSansTamilRegular, NotoSansTamilBold } from '../fonts/NotoSansTamil';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import './Admin_dashboard.css';
@@ -146,6 +147,71 @@ function pdfFormatDateTime(date = new Date()) {
   const ampm = hh >= 12 ? "PM" : "AM";
   hh = hh % 12 || 12;
   return `${d}/${m}/${y} ${String(hh).padStart(2, "0")}:${mm} ${ampm}`;
+}
+
+// FIX: jsPDF has no Indic text-shaping engine (no GSUB/GPOS support), so
+// Tamil glyphs render in raw stored order with wrong spacing/overlap even
+// though the font itself is correct and non-variable. The browser's own
+// text engine (Canvas 2D) DOES perform correct Indic shaping, so instead
+// of asking jsPDF to draw Tamil text directly, we render the Tamil string
+// to an offscreen canvas (browser shapes it correctly), turn that into a
+// PNG, and place the PNG image into the PDF cell instead of text.
+
+function containsTamil(str) {
+  return /[\u0B80-\u0BFF]/.test(str || '');
+}
+
+let tamilCanvasFontsLoaded = false;
+async function ensureTamilCanvasFonts() {
+  if (tamilCanvasFontsLoaded) return;
+  const regularFace = new FontFace(
+    'NotoSansTamilCanvasRegular',
+    `url(data:font/ttf;base64,${NotoSansTamilRegular})`
+  );
+  const boldFace = new FontFace(
+    'NotoSansTamilCanvasBold',
+    `url(data:font/ttf;base64,${NotoSansTamilBold})`
+  );
+  await regularFace.load();
+  await boldFace.load();
+  document.fonts.add(regularFace);
+  document.fonts.add(boldFace);
+  await document.fonts.ready;
+  tamilCanvasFontsLoaded = true;
+}
+
+// Renders `text` using the browser's real Indic-shaping engine and returns
+// a PNG data URL plus the width/height to place it at inside the PDF
+// (roughly in the same "pt" units jsPDF is using, since fontSizePt is fed
+// straight in as the canvas px size).
+function renderTamilTextImage(text, fontSizePt, bold, colorRgb) {
+  const scale = 4; // supersample so the PNG stays crisp at PDF resolution
+  const fontPx = fontSizePt * scale;
+  const fontFamily = bold ? 'NotoSansTamilCanvasBold' : 'NotoSansTamilCanvasRegular';
+
+  const measureCanvas = document.createElement('canvas');
+  const mctx = measureCanvas.getContext('2d');
+  mctx.font = `${fontPx}px ${fontFamily}`;
+  const metrics = mctx.measureText(text);
+
+  const padPx = 3 * scale;
+  const widthPx = Math.max(1, Math.ceil(metrics.width) + padPx * 2);
+  const heightPx = Math.ceil(fontPx * 1.6);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = widthPx;
+  canvas.height = heightPx;
+  const ctx = canvas.getContext('2d');
+  ctx.font = `${fontPx}px ${fontFamily}`;
+  ctx.fillStyle = `rgb(${colorRgb[0]}, ${colorRgb[1]}, ${colorRgb[2]})`;
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, padPx, heightPx / 2);
+
+  return {
+    dataUrl: canvas.toDataURL('image/png'),
+    width: widthPx / scale,
+    height: heightPx / scale,
+  };
 }
 
 export default function AdminDashboard() {
@@ -379,8 +445,19 @@ export default function AdminDashboard() {
   }, [filteredEntries]);
 
   // ================= PREMIUM PDF EXPORT (temple-management style) =================
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
+    // Load the Tamil canvas fonts BEFORE generating the PDF, since Tamil
+    // cells are rendered as shaped-text images (see renderTamilTextImage).
+    await ensureTamilCanvasFonts();
+
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+
+    // Register Tamil font
+    doc.addFileToVFS("NotoSansTamil-Regular.ttf", NotoSansTamilRegular);
+    doc.addFont("NotoSansTamil-Regular.ttf", "NotoSansTamil", "normal");
+    doc.addFileToVFS("NotoSansTamil-Bold.ttf", NotoSansTamilBold);
+    doc.addFont("NotoSansTamil-Bold.ttf", "NotoSansTamil", "bold");
+    
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 32;
@@ -391,12 +468,12 @@ export default function AdminDashboard() {
 
     // ---- Header (redrawn on every page) ----
     function drawHeader() {
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansTamil", "bold");
       doc.setFontSize(20);
       doc.setTextColor(...PDF_COLORS.gold);
       doc.text("TEMPLE DONATION MANAGEMENT SYSTEM", pageWidth / 2, margin + 6, { align: "center" });
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont("NotoSansTamil", "normal");
       doc.setFontSize(9.5);
       doc.setTextColor(...PDF_COLORS.brownSoft);
       doc.text(`Generated On: ${pdfFormatDateTime()}`, pageWidth / 2, margin + 24, { align: "center" });
@@ -423,12 +500,12 @@ export default function AdminDashboard() {
       doc.setLineWidth(1);
       doc.roundedRect(x, y, w, h, 8, 8, "FD");
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansTamil", "bold");
       doc.setFontSize(10.5);
       doc.setTextColor(...border);
       doc.text(label, x + w / 2, y + 19, { align: "center" });
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("NotoSansTamil", "bold");
       doc.setFontSize(17);
       doc.setTextColor(...valueColor);
       doc.text(value, x + w / 2, y + 40, { align: "center" });
@@ -467,7 +544,7 @@ export default function AdminDashboard() {
       margin: { left: margin, right: margin, bottom: 70 },
       theme: "grid",
       styles: {
-        font: "helvetica",
+        font: "NotoSansTamil",
         fontSize: 8.5,
         cellPadding: 6,
         halign: "center",
@@ -494,6 +571,33 @@ export default function AdminDashboard() {
         6: { textColor: PDF_COLORS.cashGreen, fontStyle: "bold" }, // Cash
         7: { textColor: PDF_COLORS.gold, fontStyle: "bold" },      // Total
       },
+      didParseCell: function (data) {
+        // Columns that can contain Tamil: 2=Name, 3=Address, 9=Remark
+        if (data.section === 'body' && [2, 3, 9].includes(data.column.index)) {
+          if (containsTamil(String(data.cell.raw))) {
+            // Hide the mis-shaped default text by matching it to the row's
+            // own background color, instead of removing it outright — this
+            // keeps autoTable's column-width/row-height calculations intact.
+            const isAlternate = data.row.index % 2 === 1;
+            data.cell.styles.textColor = isAlternate ? PDF_COLORS.rowOdd : PDF_COLORS.rowEven;
+          }
+        }
+      },
+      didDrawCell: function (data) {
+        if (data.section === 'body' && [2, 3, 9].includes(data.column.index)) {
+          const raw = data.column.index === 9 ? (data.cell.raw || "-") : data.cell.raw;
+          const text = String(raw || "");
+          if (containsTamil(text)) {
+            const isName = data.column.index === 2;
+            const color = isName ? PDF_COLORS.brown : PDF_COLORS.brownSoft;
+            const img = renderTamilTextImage(text, 8.5, isName, color);
+            const padLeft = 6; // matches styles.cellPadding
+            const x = data.cell.x + padLeft;
+            const y = data.cell.y + (data.cell.height - img.height) / 2;
+            doc.addImage(img.dataUrl, "PNG", x, y, img.width, img.height);
+          }
+        }
+      },
       didDrawPage: function () {
         if (doc.internal.getCurrentPageInfo().pageNumber > 1) {
           drawHeader();
@@ -519,7 +623,7 @@ export default function AdminDashboard() {
     const thirdWidth = (pageWidth - margin * 2) / 3;
     const textY = finalY + 28;
 
-    doc.setFont("helvetica", "bold");
+    doc.setFont("NotoSansTamil", "bold");
     doc.setFontSize(12);
     doc.setTextColor(...PDF_COLORS.gpayBlue);
     doc.text(`TOTAL GPay: ${pdfFormatCurrency(totalGpay)}`, margin + thirdWidth / 2, textY, { align: "center" });
@@ -539,7 +643,7 @@ export default function AdminDashboard() {
       doc.setLineWidth(0.6);
       doc.line(margin, pageHeight - 34, pageWidth - margin, pageHeight - 34);
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont("NotoSansTamil", "normal");
       doc.setFontSize(8.5);
       doc.setTextColor(...PDF_COLORS.textMuted);
       doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 20, { align: "center" });
