@@ -19,8 +19,7 @@ function getBillBookRangeLabel(bookNo) {
   return `${start}-${end}`;
 }
 
-// FIX: collision-safe unique id generator (was Date.now() alone,
-// which could clash if two entries got created in the same millisecond)
+// collision-safe unique id generator
 function generateUniqueId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -102,8 +101,6 @@ const IconEdit = (props) => (
     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z" />
   </svg>
 );
-
-/* Delete icon, matching the existing inline SVG icon style */
 const IconTrash = (props) => (
   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <polyline points="3 6 5 6 21 6" />
@@ -117,11 +114,11 @@ const IconTrash = (props) => (
 
 // ---------- PDF THEME (matches Admin_dashboard.css gold palette) ----------
 const PDF_COLORS = {
-  gold: [141, 106, 41],       // #8D6A29
-  goldLight: [212, 175, 90],  // #D4AF5A
-  brown: [61, 43, 18],        // #3D2B12
-  brownSoft: [90, 69, 32],    // #5A4520
-  cream: [250, 246, 238],     // #FAF6EE
+  gold: [141, 106, 41],
+  goldLight: [212, 175, 90],
+  brown: [61, 43, 18],
+  brownSoft: [90, 69, 32],
+  cream: [250, 246, 238],
   white: [255, 255, 255],
   gpayBlue: [26, 90, 168],
   gpayBlueBg: [225, 238, 252],
@@ -149,14 +146,8 @@ function pdfFormatDateTime(date = new Date()) {
   return `${d}/${m}/${y} ${String(hh).padStart(2, "0")}:${mm} ${ampm}`;
 }
 
-// FIX: jsPDF has no Indic text-shaping engine (no GSUB/GPOS support), so
-// Tamil glyphs render in raw stored order with wrong spacing/overlap even
-// though the font itself is correct and non-variable. The browser's own
-// text engine (Canvas 2D) DOES perform correct Indic shaping, so instead
-// of asking jsPDF to draw Tamil text directly, we render the Tamil string
-// to an offscreen canvas (browser shapes it correctly), turn that into a
-// PNG, and place the PNG image into the PDF cell instead of text.
-
+// jsPDF has no Indic text-shaping, so Tamil is rendered via Canvas 2D
+// (browser shapes it correctly) and placed into the PDF as a PNG image.
 function containsTamil(str) {
   return /[\u0B80-\u0BFF]/.test(str || '');
 }
@@ -180,12 +171,8 @@ async function ensureTamilCanvasFonts() {
   tamilCanvasFontsLoaded = true;
 }
 
-// Renders `text` using the browser's real Indic-shaping engine and returns
-// a PNG data URL plus the width/height to place it at inside the PDF
-// (roughly in the same "pt" units jsPDF is using, since fontSizePt is fed
-// straight in as the canvas px size).
 function renderTamilTextImage(text, fontSizePt, bold, colorRgb) {
-  const scale = 4; // supersample so the PNG stays crisp at PDF resolution
+  const scale = 4;
   const fontPx = fontSizePt * scale;
   const fontFamily = bold ? 'NotoSansTamilCanvasBold' : 'NotoSansTamilCanvasRegular';
 
@@ -215,19 +202,16 @@ function renderTamilTextImage(text, fontSizePt, bold, colorRgb) {
 }
 
 export default function AdminDashboard() {
-  const [entries, setEntries] = useState([
-   ]);
+  const [entries, setEntries] = useState([]);
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
-  const [formError, setFormError] = useState(''); // FIX: inline error instead of alert()
+  const [formError, setFormError] = useState('');
 
-  // Search states (original)
+  // Search states
   const [searchAddress, setSearchAddress] = useState('');
   const [searchBillBook, setSearchBillBook] = useState('');
-
-  // New search / filter states
   const [quickSearch, setQuickSearch] = useState('');
   const [searchName, setSearchName] = useState('');
   const [searchPhone, setSearchPhone] = useState('');
@@ -237,6 +221,7 @@ export default function AdminDashboard() {
   // Payment search states
   const [paymentType, setPaymentType] = useState('All');
   const [paymentSearch, setPaymentSearch] = useState('');
+  const [paymentAmount, setPaymentAmount] = useState(''); // NEW: amount filter
 
   useEffect(() => {
     const saved = localStorage.getItem('templeData');
@@ -250,7 +235,6 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    // FIX: guard localStorage writes (quota exceeded / private browsing can throw)
     try {
       localStorage.setItem('templeData', JSON.stringify(entries));
     } catch (e) {
@@ -270,7 +254,6 @@ export default function AdminDashboard() {
     });
   };
 
-  // FIX: centralised validation, returns an error string or '' if valid
   function validateForm(data, currentEntries, currentEditingId) {
     if (!data.billNo || !data.name || !data.address || !data.phone || !data.date) {
       return 'Please fill Bill No, Name, Address, Phone and Date!';
@@ -281,7 +264,6 @@ export default function AdminDashboard() {
       return 'Bill No must be a valid whole number greater than 0!';
     }
 
-    // FIX: block duplicate bill numbers (excluding the entry currently being edited)
     const duplicate = currentEntries.some(
       entry => String(entry.billNo) === String(data.billNo) && entry.uniqueId !== currentEditingId
     );
@@ -293,14 +275,12 @@ export default function AdminDashboard() {
       return 'Please enter GPay amount or Cash amount (at least one)!';
     }
 
-    // FIX: reject negative amounts
     const gpayNum = Number(data.gpay) || 0;
     const cashNum = Number(data.cash) || 0;
     if (gpayNum < 0 || cashNum < 0) {
       return 'GPay and Cash amounts cannot be negative!';
     }
 
-    // FIX: basic phone sanity check (10 digit Indian mobile numbers)
     const phoneDigits = data.phone.replace(/\D/g, '');
     if (phoneDigits.length !== 10) {
       return 'Phone number must be 10 digits!';
@@ -337,7 +317,7 @@ export default function AdminDashboard() {
     } else {
       const newEntry = {
         ...finalData,
-        uniqueId: generateUniqueId() // FIX: was Date.now()
+        uniqueId: generateUniqueId()
       };
       setEntries([...entries, newEntry]);
     }
@@ -370,12 +350,6 @@ export default function AdminDashboard() {
     setFormError('');
   };
 
-  /* handleDelete function
-     - Uses native browser confirm() as required (no external library)
-     - Removes entry from entries state (localStorage syncs automatically via the
-       existing useEffect(() => { localStorage.setItem(...) }, [entries]) above)
-     - If the deleted entry is currently being edited, closes the form and resets
-       editing state */
   const handleDelete = (uniqueId) => {
     const confirmed = window.confirm('Are you sure you want to delete this entry?');
     if (!confirmed) return;
@@ -389,10 +363,11 @@ export default function AdminDashboard() {
     }
   };
 
-  // Filtering logic: all search fields combine (AND) automatically
+  // Filtering logic: all search fields combine (AND)
   const filteredEntries = useMemo(() => {
     const q = quickSearch.trim().toLowerCase();
     const paySearch = paymentSearch.trim().toLowerCase();
+    const amt = paymentAmount.trim();
 
     return entries.filter(entry => {
       const quickMatch = q === '' ||
@@ -416,15 +391,19 @@ export default function AdminDashboard() {
       const billNoMatch = searchBillNo.trim() === '' ||
         String(entry.billNo || '').toLowerCase().includes(searchBillNo.trim().toLowerCase());
 
+      // Payment match (type + name + exact amount)
       let paymentMatch = true;
+      const nameOk = paySearch === '' || (entry.name || '').toLowerCase().includes(paySearch);
+
       if (paymentType === 'GPay') {
-        const hasGpay = Number(entry.gpay) > 0;
-        const nameOk = paySearch === '' || (entry.name || '').toLowerCase().includes(paySearch);
-        paymentMatch = hasGpay && nameOk;
+        const amtOk = amt === '' ? Number(entry.gpay) > 0 : Number(entry.gpay) >= Number(amt);
+        paymentMatch = amtOk && nameOk;
       } else if (paymentType === 'Cash') {
-        const hasCash = Number(entry.cash) > 0;
-        const nameOk = paySearch === '' || (entry.name || '').toLowerCase().includes(paySearch);
-        paymentMatch = hasCash && nameOk;
+        const amtOk = amt === '' ? Number(entry.cash) > 0 : Number(entry.cash) >= Number(amt);
+        paymentMatch = amtOk && nameOk;
+      } else if (amt !== '') {
+        // "All" + amount => GPay or Cash, whichever is >= the amount
+        paymentMatch = Number(entry.gpay) >= Number(amt) || Number(entry.cash) >= Number(amt);
       }
 
       return quickMatch && addressMatch && billBookMatch && nameMatch && phoneMatch &&
@@ -432,10 +411,9 @@ export default function AdminDashboard() {
     });
   }, [
     entries, searchAddress, searchBillBook, quickSearch, searchName, searchPhone, searchBillNo,
-    paymentType, paymentSearch
+    paymentType, paymentSearch, paymentAmount
   ]);
 
-  // Totals for currently filtered/searched results
   const totals = useMemo(() => {
     return filteredEntries.reduce((acc, entry) => {
       acc.gpay += Number(entry.gpay) || 0;
@@ -444,20 +422,17 @@ export default function AdminDashboard() {
     }, { gpay: 0, cash: 0 });
   }, [filteredEntries]);
 
-  // ================= PREMIUM PDF EXPORT (temple-management style) =================
+  // ================= PREMIUM PDF EXPORT =================
   const downloadPDF = async () => {
-    // Load the Tamil canvas fonts BEFORE generating the PDF, since Tamil
-    // cells are rendered as shaped-text images (see renderTamilTextImage).
     await ensureTamilCanvasFonts();
 
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
 
-    // Register Tamil font
     doc.addFileToVFS("NotoSansTamil-Regular.ttf", NotoSansTamilRegular);
     doc.addFont("NotoSansTamil-Regular.ttf", "NotoSansTamil", "normal");
     doc.addFileToVFS("NotoSansTamil-Bold.ttf", NotoSansTamilBold);
     doc.addFont("NotoSansTamil-Bold.ttf", "NotoSansTamil", "bold");
-    
+
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 32;
@@ -466,7 +441,6 @@ export default function AdminDashboard() {
     const totalCash = totals.cash;
     const grandTotal = totalGpay + totalCash;
 
-    // ---- Header (redrawn on every page) ----
     function drawHeader() {
       doc.setFont("NotoSansTamil", "bold");
       doc.setFontSize(20);
@@ -488,7 +462,6 @@ export default function AdminDashboard() {
 
     const headerBottomY = drawHeader();
 
-    // ---- Summary cards ----
     const cardsY = headerBottomY + 16;
     const cardHeight = 52;
     const cardGap = 16;
@@ -522,7 +495,6 @@ export default function AdminDashboard() {
 
     const tableStartY = cardsY + cardHeight + 20;
 
-    // ---- Table ----
     autoTable(doc, {
       startY: tableStartY,
       head: [[
@@ -564,20 +536,16 @@ export default function AdminDashboard() {
       alternateRowStyles: { fillColor: PDF_COLORS.rowOdd },
       bodyStyles: { fillColor: PDF_COLORS.rowEven },
       columnStyles: {
-        2: { halign: "left", fontStyle: "bold", textColor: PDF_COLORS.brown }, // Name
-        3: { halign: "left" },  // Address
-        9: { halign: "left" },  // Remark
-        5: { textColor: PDF_COLORS.gpayBlue, fontStyle: "bold" },  // GPay
-        6: { textColor: PDF_COLORS.cashGreen, fontStyle: "bold" }, // Cash
-        7: { textColor: PDF_COLORS.gold, fontStyle: "bold" },      // Total
+        2: { halign: "left", fontStyle: "bold", textColor: PDF_COLORS.brown },
+        3: { halign: "left" },
+        9: { halign: "left" },
+        5: { textColor: PDF_COLORS.gpayBlue, fontStyle: "bold" },
+        6: { textColor: PDF_COLORS.cashGreen, fontStyle: "bold" },
+        7: { textColor: PDF_COLORS.gold, fontStyle: "bold" },
       },
       didParseCell: function (data) {
-        // Columns that can contain Tamil: 2=Name, 3=Address, 9=Remark
         if (data.section === 'body' && [2, 3, 9].includes(data.column.index)) {
           if (containsTamil(String(data.cell.raw))) {
-            // Hide the mis-shaped default text by matching it to the row's
-            // own background color, instead of removing it outright — this
-            // keeps autoTable's column-width/row-height calculations intact.
             const isAlternate = data.row.index % 2 === 1;
             data.cell.styles.textColor = isAlternate ? PDF_COLORS.rowOdd : PDF_COLORS.rowEven;
           }
@@ -591,7 +559,7 @@ export default function AdminDashboard() {
             const isName = data.column.index === 2;
             const color = isName ? PDF_COLORS.brown : PDF_COLORS.brownSoft;
             const img = renderTamilTextImage(text, 8.5, isName, color);
-            const padLeft = 6; // matches styles.cellPadding
+            const padLeft = 6;
             const x = data.cell.x + padLeft;
             const y = data.cell.y + (data.cell.height - img.height) / 2;
             doc.addImage(img.dataUrl, "PNG", x, y, img.width, img.height);
@@ -605,7 +573,6 @@ export default function AdminDashboard() {
       },
     });
 
-    // ---- Total summary box ----
     let finalY = doc.lastAutoTable.finalY + 18;
 
     if (finalY + 60 > pageHeight - 50) {
@@ -635,7 +602,6 @@ export default function AdminDashboard() {
     doc.setTextColor(...PDF_COLORS.gold);
     doc.text(`GRAND TOTAL: ${pdfFormatCurrency(grandTotal)}`, margin + thirdWidth * 2.5, textY, { align: "center" });
 
-    // ---- Footer (every page) ----
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
@@ -652,7 +618,7 @@ export default function AdminDashboard() {
 
     doc.save(`Temple_Donation_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
-  // =================================================================================
+  // ======================================================
 
   const clearSearch = () => {
     setSearchAddress('');
@@ -663,9 +629,9 @@ export default function AdminDashboard() {
     setSearchBillNo('');
     setPaymentType('All');
     setPaymentSearch('');
+    setPaymentAmount(''); // NEW
   };
 
-  // FIX: when payment type switches back to "All" (or changes), clear stale payment search text
   const handlePaymentTypeChange = (e) => {
     const value = e.target.value;
     setPaymentType(value);
@@ -682,7 +648,8 @@ export default function AdminDashboard() {
     searchPhone.trim() !== '' ||
     searchBillNo.trim() !== '' ||
     paymentType !== 'All' ||
-    paymentSearch.trim() !== '';
+    paymentSearch.trim() !== '' ||
+    paymentAmount.trim() !== ''; // NEW
 
   return (
     <div className="dashboard-container">
@@ -694,7 +661,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Search Section — premium glass card */}
+        {/* Search Section */}
         <div className="search-card slide-in-up">
           <div className="search-card-header">
             <div className="search-card-heading">
@@ -713,7 +680,6 @@ export default function AdminDashboard() {
             </button>
           </div>
 
-          {/* Quick search always visible */}
           <div className="quick-search-row">
             <div className="quick-search-field">
               <IconSearch className="quick-search-icon" />
@@ -795,6 +761,18 @@ export default function AdminDashboard() {
                       disabled={paymentType === 'All'}
                     />
                   </div>
+                  {/* NEW: Amount filter */}
+                  <div className="search-field">
+                    <label className="search-label"><IconReceipt /> Amount (minimum)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Minimum amount, e.g. 1000 and above"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -803,6 +781,14 @@ export default function AdminDashboard() {
           {isSearching && (
             <div className="search-totals">
               <span className="totals-label">Search Results: {filteredEntries.length} entries</span>
+
+              {/* NEW: how many people paid this amount */}
+              {paymentAmount.trim() !== '' && (
+                <span className="totals-chip grand-chip">
+                  {paymentType === 'All' ? 'GPay / Cash' : paymentType} la ₹{paymentAmount} / athukku mela koduthavanga: {filteredEntries.length} peru
+                </span>
+              )}
+
               {paymentType !== 'Cash' && (
                 <span className="totals-chip gpay-chip">GPay Total: ₹{totals.gpay}</span>
               )}
@@ -841,7 +827,6 @@ export default function AdminDashboard() {
             <div className="add-form-section slide-in-up">
               <h3 className="form-title">{editingId ? 'Edit Entry' : 'Add New Entry'}</h3>
 
-              {/* FIX: inline error banner instead of blocking alert() popups */}
               {formError && (
                 <div className="form-error" role="alert" style={{
                   background: '#fdecea',
