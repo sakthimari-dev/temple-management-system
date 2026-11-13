@@ -369,7 +369,8 @@ export default function AdminDashboard() {
     const paySearch = paymentSearch.trim().toLowerCase();
     const amt = paymentAmount.trim();
 
-    return entries.filter(entry => {
+    // Always sort by Bill No ascending (1, 2, 3...) so table and PDF are in order
+    return [...entries].sort((x, y) => (Number(x.billNo) || 0) - (Number(y.billNo) || 0)).filter(entry => {
       const quickMatch = q === '' ||
         (entry.name || '').toLowerCase().includes(q) ||
         (entry.address || '').toLowerCase().includes(q) ||
