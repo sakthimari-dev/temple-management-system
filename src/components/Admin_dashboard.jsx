@@ -402,8 +402,8 @@ export default function AdminDashboard() {
         const amtOk = amt === '' ? Number(entry.cash) > 0 : Number(entry.cash) >= Number(amt);
         paymentMatch = amtOk && nameOk;
       } else if (amt !== '') {
-        // "All" + amount => GPay or Cash, whichever is >= the amount
-        paymentMatch = Number(entry.gpay) >= Number(amt) || Number(entry.cash) >= Number(amt);
+        // "All" + amount => combined GPay + Cash total is >= the amount
+        paymentMatch = (Number(entry.gpay) || 0) + (Number(entry.cash) || 0) >= Number(amt);
       }
 
       return quickMatch && addressMatch && billBookMatch && nameMatch && phoneMatch &&
@@ -785,7 +785,7 @@ export default function AdminDashboard() {
               {/* NEW: how many people paid this amount */}
               {paymentAmount.trim() !== '' && (
                 <span className="totals-chip grand-chip">
-                  {paymentType === 'All' ? 'GPay / Cash' : paymentType} la ₹{paymentAmount} / athukku mela koduthavanga: {filteredEntries.length} peru
+                  {paymentType === 'All' ? 'GPay + Cash total' : paymentType} la ₹{paymentAmount} / athukku mela koduthavanga: {filteredEntries.length} peru
                 </span>
               )}
 
